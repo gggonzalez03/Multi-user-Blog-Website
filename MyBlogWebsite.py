@@ -60,6 +60,9 @@ class User(db.Model):
                     hashed_password = hashed_password,
                     email = email)
 
+#class Blog(db.Model):
+    
+
 #(c)Udacity
 class MyBlogWebsiteHandler(webapp2.RequestHandler):
     def write(self, *a, **kw):
@@ -70,12 +73,36 @@ class MyBlogWebsiteHandler(webapp2.RequestHandler):
         return t.render(params)
     def render(self, template, **kw):
         self.write(self.render_str(template, **kw))
-    def set_secure_cookie(cls, cookie_name, user_id):
+        
+    def set_secure_cookie(self, cookie_name, user_id):
         #this function set a cookie to a secure value using make_secure_cookie function
-        cookie_secure_value = Hasher.make_secure_cookie(user_id)
+        self.cookie_secure_value = Hasher.make_secure_cookie(user_id)
         self.headers.add_header(
             "Set-Cookie",
             "%s=%s; Path=/" %(cookie_name, cookie_secure_value))
+
+    def check_valid_cookie(self, cookie_secure_value):
+        #returns true if the cookie is valid
+    
+        user_id = cookie_secure_value.split("|")[0]
+
+        return cookie_secure_value == Hasher.make_secure_cookie(user_id)
+
+    def read_secure_cookie(self, cookie_name, cookie_secure_value):
+        #this function returns the id of the user from the cookie
+        #if the user even exists
+
+        if self.check_valid_cookie(cookie_secure_value):
+            return True
+        
+        
+class LogOut(MyBlogWebsiteHandler):
+    def get(self):
+        self.response.headers.add_header(
+            "Set-Cookie",
+            "%s=%s; Path=/" %("user_cookie_id", "deleted; Expires=Thu, 01-Jan-1970 00:00:00 GMT"))
+        self.redirect("/signup")
+        
 
 class InputValidators:
     #valid input criteria - regular expression
@@ -97,19 +124,7 @@ class InputValidators:
         return hashed_password == Hasher.make_salted_hash(username, password, salt)
 
 class LogIn(MyBlogWebsiteHandler, InputValidators):
-    def get(self):
-        #set_cookie
-        self.render("login.html")
-    def post(self):
-        #set_cookie
-        self.render("login.html")
-    def set_secure_cookie(self, cookie_name, user_id):
-        #this function set a cookie to a secure value using make_secure_cookie function
-        cookie_secure_value = Hasher.make_secure_cookie(user_id)
-        self.response.headers.add_header(
-            "Set-Cookie",
-            "%s=%s; Path=/" %(cookie_name, cookie_secure_value))
-    
+
     def login_user_via_credentials(self, username, password):
         user_row = User.get_row_by_username(username)
         if user_row:
@@ -124,7 +139,36 @@ class LogIn(MyBlogWebsiteHandler, InputValidators):
         else:
             return False
 
-class HomePage(LogIn):
+    def set_secure_cookie(self, cookie_name, user_id):
+        #this function set a cookie to a secure value using make_secure_cookie function
+        cookie_secure_value = Hasher.make_secure_cookie(user_id)
+        self.response.headers.add_header(
+            "Set-Cookie",
+            "%s=%s; Path=/" %(cookie_name, cookie_secure_value))
+    
+    def get(self):
+        self.render("login.html")
+    def post(self):
+
+        has_error = False
+
+        username = self.request.get("username")
+        password = self.request.get("password")
+
+        #check if credentials are valid in the first place before checking the database
+        if not self.valid_username(username):
+            has_error = True
+        if not self.valid_password(password):
+            has_error = True
+        
+        if has_error:
+            self.render("login.html", invalid_login_message = "Invalid login")
+        else:
+            #check the database if the user exists
+            if self.login_user_via_credentials(username, password):
+                self.redirect("/signup/welcome")
+
+class SignUp(LogIn):
     def get(self):
         self.render("signup.html")
     def post(self):
@@ -168,18 +212,25 @@ class HomePage(LogIn):
                 #insert the new entry into the database
                 new_user.put()
 
+                
+                self.set_secure_cookie("user_cookie_id",str(new_user.key()))
                 #login the new user
-                if self.login_user_via_credentials(username, password): #this should return True :(
-                    self.render("welcome.html", message = username + ", you are now logged in!")
-                else:
-                    self.render("signup.html", error_username = "Oops something went wrong")
+                #if self.login_user_via_credentials(username, password): #this should return True :(
+                self.redirect("/signup/welcome")
+                #else:
+                    #self.render("signup.html", error_username = "Oops something went wrong")
 
-class WelcomePage(HomePage):
+class WelcomePage(SignUp):
     def get(self):
-        self.render("welcome.html", message = str(username.all().get()))
+            #todo:
+            self.render("welcome.html", message = self.request.cookies.get("user_cookie_id"))
+    def post(self):
+        self.redirect("/logout")
 
 
 app = webapp2.WSGIApplication([
-    ('/', HomePage),
+    ('/signup', SignUp),
+    ('/logout', LogOut),
+    ('/login', LogIn),
     ('/signup/welcome', WelcomePage )
     ],debug=True)
