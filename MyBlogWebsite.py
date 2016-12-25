@@ -42,13 +42,15 @@ class User(db.Model):
     #PLEASE EVALUATE :)
     #class methods that are accessible by the class instead of the instance of the class
     @classmethod
-    def get_row_by_id(cls, id):
-        return cls.get_by_id(id)
+    def get_row_by_id(cls, user_id):
+        retrieved_user = cls.get_by_id(int(user_id))
+        return retrieved_user
     
     @classmethod
     def get_row_by_username(cls, username):
-        retrieved_user = cls.all().filter('username =', username).get()
-        return retrieved_user
+        #retrieved_user = cls.all().filter('username =', username).get()
+        #return retrieved_user
+        pass
     
     @classmethod
     def register(cls, username, password, email = None):
@@ -82,18 +84,19 @@ class MyBlogWebsiteHandler(webapp2.RequestHandler):
             "%s=%s; Path=/" %(cookie_name, cookie_secure_value))
 
     def check_valid_cookie(self, cookie_secure_value):
-        #returns true if the cookie is valid
-    
+        #returns the user_id if the cookie is valid
         user_id = cookie_secure_value.split("|")[0]
+        if cookie_secure_value == Hasher.make_secure_cookie(user_id):
+            return user_id
 
-        return cookie_secure_value == Hasher.make_secure_cookie(user_id)
-
-    def read_secure_cookie(self, cookie_name, cookie_secure_value):
-        #this function returns the id of the user from the cookie
-        #if the user even exists
-
-        if self.check_valid_cookie(cookie_secure_value):
-            return True
+    def read_secure_cookie(self, cookie_name):
+        cookie_val = self.request.cookies.get(cookie_name)
+        return cookie_val and self.check_valid_cookie(cookie_val)
+        
+    #def initialize(self, *a, **kw):
+        #webapp2.RequestHandler.initialize(self, *a, **kw)
+        #user_cookie_id = self.read_secure_cookie('user_cookie_id')
+        #self.logged_in_user = user_cookie_id and User.get_row_by_id(user_cookie_id)
         
         
 class LogOut(MyBlogWebsiteHandler):
@@ -205,25 +208,26 @@ class SignUp(LogIn):
             #check if user already exists in the database
             user_row = User.get_row_by_username(username)
             if user_row:
-                self.render("signup.html", error_username = "That user already exists!")
+                self.render("signup.html", error_username = user_row.username + "That user already exists!")
             else:
                 #if the user does not already exists, create a new entry to the database
                 new_user = User.register(username, password, email)
                 #insert the new entry into the database
                 new_user.put()
-
                 
-                self.set_secure_cookie("user_cookie_id",str(new_user.key()))
-                #login the new user
-                #if self.login_user_via_credentials(username, password): #this should return True :(
+                self.set_secure_cookie("user_cookie_id", str(new_user.key().id()))
                 self.redirect("/signup/welcome")
-                #else:
-                    #self.render("signup.html", error_username = "Oops something went wrong")
 
 class WelcomePage(SignUp):
     def get(self):
-            #todo:
-            self.render("welcome.html", message = self.request.cookies.get("user_cookie_id"))
+        user_cookie_id = self.request.cookies.get("user_cookie_id") 
+        is_cookie_valid = self.check_valid_cookie(user_cookie_id)
+        #user_row = User.get_row_by_id(user_id)
+        if is_cookie_valid:
+            user_id = user_cookie_id.split("|")[0]
+            self.render("welcome.html", message = User.get_row_by_id(user_id).username)
+        else:
+            self.redirect("/signup")
     def post(self):
         self.redirect("/logout")
 
