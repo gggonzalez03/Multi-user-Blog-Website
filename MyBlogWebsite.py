@@ -42,14 +42,14 @@ class User(db.Model):
     #PLEASE EVALUATE :)
     #class methods that are accessible by the class instead of the instance of the class
     @classmethod
-    def get_row_by_id(cls, user_id):
+    def get_row_by_id (cls, user_id):
         retrieved_user = cls.get_by_id(int(user_id))
         return retrieved_user
     
     @classmethod
     def get_row_by_username(cls, username):
-        #retrieved_user = cls.all().filter('username =', username).get()
-        #return retrieved_user
+        retrieved_user = cls.all().filter('username =', username).get()
+        return retrieved_user
         pass
     
     @classmethod
@@ -61,9 +61,65 @@ class User(db.Model):
         return User(username = username,
                     hashed_password = hashed_password,
                     email = email)
-
-#class Blog(db.Model):
     
+
+class Blog(db.Model):
+    user_id = db.IntegerProperty(required = True)
+    blog_title = db.StringProperty(required = True)
+    blog_body = db.TextProperty(required = True)
+    date_posted = db.DateTimeProperty(auto_now_add = True)
+    date_modified = db.DateTimeProperty(auto_now = True)
+
+    @classmethod
+    def post_blog(cls, user_id, blog_title, blog_body):
+        return Blog(user_id = user_id,
+                    blog_title = blog_title,
+                    blog_body = blog_body)
+        
+    @classmethod
+    def get_recent_blogs(cls):
+        #this function returns the 10 most recent blogs in the database
+        recent_blogs = cls.all().order('-date_modified').run(limit=10)
+        return recent_blogs
+
+    @classmethod
+    def get_all_blogs_by_user(cls, user_id):
+        #this function returns all the blogs of a certain user
+        all_user_blogs = cls.all().filter("user_id", user_id)
+        return all_user_blogs
+    
+class Like(db.Model):
+    blog_id = db.IntegerProperty(required = True)
+    user_id = db.IntegerProperty(required = True)
+
+    @classmethod
+    def like_a_blog(cls, blog_id, logged_in_user_id):
+        new_like = Like(blog_id = blog_id,
+                        user_id = logged_in_user_id)
+        new_like.put()
+    
+    @classmethod
+    def get_all_blog_likes(cls, blog_id):
+        #this function returns all the blogs of a certain user
+        all_blog_likes = cls.all().filter("blog_id", blog_id)
+        return all_blog_like
+
+    @classmethod
+    def check_user_like(cls, blog_id, user_id):
+        #function that checks if a certain blog is already liked by a user
+        liked_blog = Like.get_all_blog_likes(blog_id)
+
+        is_blog_liked = liked_blog.all().filter("user_id", user_id)
+        if is_blog_liked:
+            return True
+        else:
+            return False
+        
+        
+class Comment(db.Model):
+    blog_id = db.IntegerProperty(required = True)
+    user_id = db.IntegerProperty(required = True)
+    comment = db.StringProperty(required = True)
 
 #(c)Udacity
 class MyBlogWebsiteHandler(webapp2.RequestHandler):
@@ -76,18 +132,20 @@ class MyBlogWebsiteHandler(webapp2.RequestHandler):
     def render(self, template, **kw):
         self.write(self.render_str(template, **kw))
         
-    def set_secure_cookie(self, cookie_name, user_id):
+    def set_secure_cookie(self, cookie_name, cookie_value):
         #this function set a cookie to a secure value using make_secure_cookie function
-        self.cookie_secure_value = Hasher.make_secure_cookie(user_id)
+        self.cookie_secure_value = Hasher.make_secure_cookie(cookie_value)
         self.headers.add_header(
             "Set-Cookie",
             "%s=%s; Path=/" %(cookie_name, cookie_secure_value))
 
     def check_valid_cookie(self, cookie_secure_value):
         #returns the user_id if the cookie is valid
-        user_id = cookie_secure_value.split("|")[0]
-        if cookie_secure_value == Hasher.make_secure_cookie(user_id):
-            return user_id
+        val = cookie_secure_value.split("|")[0]
+        if cookie_secure_value == Hasher.make_secure_cookie(val):
+            return val
+        else:
+            return None
 
     def read_secure_cookie(self, cookie_name):
         cookie_val = self.request.cookies.get(cookie_name)
@@ -126,6 +184,47 @@ class InputValidators:
         salt = hashed_password.split('|')[0]
         return hashed_password == Hasher.make_salted_hash(username, password, salt)
 
+class PostBlog(MyBlogWebsiteHandler):
+    def get(self):
+        self.render("postblog.html")
+    def post(self):
+        blog_title = self.request.get("blogtitle")
+        blog_body = self.request.get("blogbody")
+        user_id = self.read_secure_cookie("user_cookie_id")
+        has_error = False
+        #TODO input validators
+
+        if user_id and not has_error:
+            new_blog = Blog.post_blog(int(user_id), blog_title, blog_body)
+            #insert the new entry into the database
+            new_blog.put()
+                
+            #self.set_secure_cookie("user_cookie_id", str(new_user.key().id()))
+            self.render("postblog.html", blogtitle = new_blog)
+        else:
+            self.redirect("/signup")
+
+class AddLike(MyBlogWebsiteHandler):
+    def post(self):
+        #TODO
+        blog_id = self.request.get("blogid")
+        user_id = self.read_secure_cookie("user_cookie_id")
+        if user_id:
+            Like.like_a_blog(int(blog_id), int(user_id))
+            self.redirect("/home")
+        else:
+            self.redirect("/signup")
+
+class HomePage(MyBlogWebsiteHandler):
+    def get(self):
+        user_id = self.read_secure_cookie("user_cookie_id")
+        if user_id:
+            self.render("homepage.html", blogs = Blog.get_recent_blogs(), users = User)
+        else:
+            self.redirect("/signup")
+    def post(self):
+        self.redirect("/blogposts")
+
 class LogIn(MyBlogWebsiteHandler, InputValidators):
 
     def login_user_via_credentials(self, username, password):
@@ -135,13 +234,13 @@ class LogIn(MyBlogWebsiteHandler, InputValidators):
             #get the hashed_password from user_row
             if self.validate_credentials(username, password, user_row.hashed_password):
                 #set a secure cookie
-                self.set_secure_cookie("user_cookie_id", str(user_row.key()))
+                self.set_secure_cookie("user_cookie_id", str(user_row.key().id()))
                 return True
             else:
                 return False
         else:
             return False
-
+    #TO CHECK
     def set_secure_cookie(self, cookie_name, user_id):
         #this function set a cookie to a secure value using make_secure_cookie function
         cookie_secure_value = Hasher.make_secure_cookie(user_id)
@@ -170,6 +269,8 @@ class LogIn(MyBlogWebsiteHandler, InputValidators):
             #check the database if the user exists
             if self.login_user_via_credentials(username, password):
                 self.redirect("/signup/welcome")
+            else:
+                self.render("login.html", invalid_login_message = "Invalid login")
 
 class SignUp(LogIn):
     def get(self):
@@ -204,11 +305,12 @@ class SignUp(LogIn):
             #todo:
                 #check if username exists, if so return to the signup page
                 #else, hash the password and insert new entry into the database
-                #and set a cookie
+                #and set a cookie to log the user in
+            
             #check if user already exists in the database
             user_row = User.get_row_by_username(username)
             if user_row:
-                self.render("signup.html", error_username = user_row.username + "That user already exists!")
+                self.render("signup.html", error_username = "That user already exists!")
             else:
                 #if the user does not already exists, create a new entry to the database
                 new_user = User.register(username, password, email)
@@ -220,21 +322,25 @@ class SignUp(LogIn):
 
 class WelcomePage(SignUp):
     def get(self):
-        user_cookie_id = self.request.cookies.get("user_cookie_id") 
-        is_cookie_valid = self.check_valid_cookie(user_cookie_id)
-        #user_row = User.get_row_by_id(user_id)
-        if is_cookie_valid:
-            user_id = user_cookie_id.split("|")[0]
-            self.render("welcome.html", message = User.get_row_by_id(user_id).username)
+        user_cookie_id = self.request.cookies.get("user_cookie_id")
+        if user_cookie_id:
+            is_cookie_valid = self.check_valid_cookie(user_cookie_id)
+            if is_cookie_valid:
+                #if the cookie is valid, 
+                user_id = user_cookie_id.split("|")[0]
+                self.render("welcome.html", message = User.get_row_by_id(user_id).username)
+            else:
+                self.redirect("/signup")
         else:
             self.redirect("/signup")
-    def post(self):
-        self.redirect("/logout")
 
 
 app = webapp2.WSGIApplication([
+    ('/home', HomePage),
+    ('/home/like', AddLike),
     ('/signup', SignUp),
     ('/logout', LogOut),
     ('/login', LogIn),
-    ('/signup/welcome', WelcomePage )
+    ('/postblog', PostBlog),
+    ('/signup/welcome', WelcomePage),
     ],debug=True)
