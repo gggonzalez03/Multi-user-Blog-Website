@@ -2,6 +2,14 @@ body{
 	font-family: 'Lato', sans-serif;
 	font-weight: 300;
 }
+form > input{
+	display: block;
+	padding: 5px;
+	margin-bottom: 4px;
+}
+header{
+	margin-bottom: 50px;
+}
 .text-muted{
 	color: #BCBBBB;
 }
@@ -11,18 +19,13 @@ body{
 .title-super{
 	font-size: 60px;
 }
-.title-logo{
-	margin-top:20px;
+.error-message{
+	color: red;
+	padding: 10px
 }
-#horizontalRule{
-	height: 3px;
-	background-color: #7d97ad;
+.blogtitle{
+	display: inline;
 }
-#signupform{
-	position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: 0;
-    margin: auto;
+.blogowner{
+	display: inline;
 }

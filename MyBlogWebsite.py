@@ -121,6 +121,13 @@ class Comment(db.Model):
     user_id = db.IntegerProperty(required = True)
     comment = db.StringProperty(required = True)
 
+    @classmethod
+    def comment_on_blog(cls, blog_id, logged_in_user_id, user_comment):
+        new_comment = Comment(blog_id = blog_id,
+                              user_id = logged_in_user_id,
+                              comment = user_comment)
+        new_comment.put()
+
 #(c)Udacity
 class MyBlogWebsiteHandler(webapp2.RequestHandler):
     def write(self, *a, **kw):
@@ -162,7 +169,7 @@ class LogOut(MyBlogWebsiteHandler):
         self.response.headers.add_header(
             "Set-Cookie",
             "%s=%s; Path=/" %("user_cookie_id", "deleted; Expires=Thu, 01-Jan-1970 00:00:00 GMT"))
-        self.redirect("/signup")
+        self.redirect("/login")
         
 
 class InputValidators:
@@ -205,15 +212,33 @@ class PostBlog(MyBlogWebsiteHandler):
             self.redirect("/signup")
 
 class AddLike(MyBlogWebsiteHandler):
+    def get(self):
+        self.redirect("/home")
     def post(self):
-        #TODO
         blog_id = self.request.get("blogid")
+        blog_owner_id = self.request.get("ownerid")
         user_id = self.read_secure_cookie("user_cookie_id")
-        if user_id:
+        if not user_id == blog_owner_id:
             Like.like_a_blog(int(blog_id), int(user_id))
             self.redirect("/home")
         else:
-            self.redirect("/signup")
+            self.render("homepage.html", error_message = "You can't like your own posts")
+
+class AddComment(MyBlogWebsiteHandler):
+    def get(self):
+        self.redirect("/home")
+    def post(self):
+        #TODO:
+        blog_id = self.request.get("blogid")
+        blog_owner_id = self.request.get("ownerid")
+        user_comment = self.request.get("usercomment")
+        user_id = self.read_secure_cookie("user_cookie_id")
+
+        if not user_id == blog_owner_id:
+            Comment.comment_on_blog(int(blog_id), int(user_id), user_comment)
+            self.redirect("/home")
+        else:
+            self.render("homepage.html", error_message = "You can't comment on your own posts")
 
 class HomePage(MyBlogWebsiteHandler):
     def get(self):
@@ -222,8 +247,6 @@ class HomePage(MyBlogWebsiteHandler):
             self.render("homepage.html", blogs = Blog.get_recent_blogs(), users = User)
         else:
             self.redirect("/signup")
-    def post(self):
-        self.redirect("/blogposts")
 
 class LogIn(MyBlogWebsiteHandler, InputValidators):
 
@@ -268,7 +291,7 @@ class LogIn(MyBlogWebsiteHandler, InputValidators):
         else:
             #check the database if the user exists
             if self.login_user_via_credentials(username, password):
-                self.redirect("/signup/welcome")
+                self.redirect("/home")
             else:
                 self.render("login.html", invalid_login_message = "Invalid login")
 
@@ -318,7 +341,7 @@ class SignUp(LogIn):
                 new_user.put()
                 
                 self.set_secure_cookie("user_cookie_id", str(new_user.key().id()))
-                self.redirect("/signup/welcome")
+                self.redirect("/welcome")
 
 class WelcomePage(SignUp):
     def get(self):
@@ -334,13 +357,13 @@ class WelcomePage(SignUp):
         else:
             self.redirect("/signup")
 
-
 app = webapp2.WSGIApplication([
     ('/home', HomePage),
     ('/home/like', AddLike),
+    ('/home/comment', AddComment),
     ('/signup', SignUp),
     ('/logout', LogOut),
     ('/login', LogIn),
     ('/postblog', PostBlog),
-    ('/signup/welcome', WelcomePage),
+    ('/welcome', WelcomePage),
     ],debug=True)

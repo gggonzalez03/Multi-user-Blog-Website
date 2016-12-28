@@ -1,40 +1,72 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Home</title>
-    <link href="https://fonts.googleapis.com/css?family=Lato:100,300" rel="stylesheet">
-    <link rel="stylesheet" href="static/css/bootstrap.min.css">
-    <script type="text/javascript" src="static/js/jquery-3.1.1.min.js"></script>
-    <script type="text/javascript" src="static/js/bootstrap.min.js"></script>
-    <link rel="stylesheet" href="static/css/main.css">
-</head>
-<body>
-	<div class="container">
-		<nav class="row" >
-			<a href="/logout">Logout</a>
-		</nav>
-		<header class="row">
-			<h1>All Blogs</h1>
-		</header>
+{% extends "base.html" %}
+
+{% block content %}
+	<header class="row">
+		<div class="col-md-12 text-center">
+			<h1>All Blogs</h1>{{error_message}}
+		</div>
+	</header>
+	<hr class="row">
 		<!--This will be a jinja logic-->
-		{% for blog in blogs%}
-		<hr class="row">
-		<article class="row">
-			<h3>{{blog.blog_title}}</h3>
-			<p>{{blog.date_posted}}</p>
-			<hr>
-			<pre>{{blog.blog_body}}</pre>
-			<p>{{users.get_row_by_id(blog.user_id).username}}</p>
-		</article>
-		<form method="post" action="/home/like">
-			<input type="hidden" name="blogid" value="{{blog.key().id()}}">
-			<input type="submit" value="Like" name="likeblogpost">
-		</form>
+	{% for blog in blogs%}
+	<article class="row">
+		<div class="col-md-12">
+			<div class="text-center">
+				<h3 class="blogtitle">{{blog.blog_title}}</h3>
+				<p class="blogowner">by {{users.get_row_by_id(blog.user_id).username}}</p>
+				<p>{{blog.date_posted}}</p>
+			</div>
+			<div class="col-md-3"></div>
+			<div class="col-md-6">
+				<p>{{blog.blog_body}}</p>
+			</div>
+		</div>
+	</article>
+	<section class="row">
+		<div class="col-md-3"></div>
+		<div class="col-md-6">
+			<div class="col-md-6"></div>
+			<div class="col-md-3">
+				<form method="post" action="/home/like">
+					<input type="hidden" name="blogid" value="{{blog.key().id()}}">
+					<input type="hidden" name="ownerid" value="{{blog.user_id}}">
+					<button class="col-md-12" type="submit" value="Like" name="likeblogpost">Like</button>
+				</form>
+			</div>
+			<div class="col-md-3">
+				<button class="col-md-12" type="submit" name="commentonblogpost" data-toggle="modal" data-target="#comment{{blog.key().id()}}">Comment</button>
+			</div>
+		</div>
+	</section>
+		
+
+	<hr class="row">
+
+	<!-- Modal -->
+	<div id="comment{{blog.key().id()}}" class="modal fade" role="dialog">
+	  <div class="modal-dialog">
+
+	    <!-- Modal content-->
+	    <div class="modal-content">
+	      <div class="modal-header">
+	        <button type="button" class="close" data-dismiss="modal">&times;</button>
+	        <h4 class="modal-title">{{blog.blog_title}}</h4>
+	      </div>
+	      <div class="modal-body">
+	        <form method="post" action="/home/comment">
+				<input type="hidden" name="blogid" value="{{blog.key().id()}}">
+				<input type="hidden" name="ownerid" value="{{blog.user_id}}">
+				<textarea class="col-md-12" name="usercomment"></textarea>
+				<input class="col-md-12" type="submit" value="Comment" name="likeblogpost">
+			</form>
+	      </div>
+	      <div class="modal-footer">
+	        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+	      </div>
+	    </div>
+
+	  </div>
+	</div>
 		{% endfor %}
 		{{likeid}}
-	</div>
-</body>
-</html>
+{% endblock %}
