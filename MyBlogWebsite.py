@@ -13,7 +13,7 @@ template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir),
                                autoescape = True)
 
-secret_string = "thisismyfirstwebsite"
+SECRET_STRING = "thisismyfirstwebsite"
 
 class Hasher:
     @classmethod
@@ -29,7 +29,7 @@ class Hasher:
     @classmethod
     def make_secure_cookie(cls, user_id):
         #generate a secure cookie via hmac using a secret string
-        hashed_user_id = hmac.new(secret_string, user_id).hexdigest()
+        hashed_user_id = hmac.new(SECRET_STRING, user_id).hexdigest()
         return "%s|%s" %(user_id, hashed_user_id)
         
     
@@ -97,27 +97,32 @@ class Like(db.Model):
 
     @classmethod
     def like_a_blog(cls, blog_id, logged_in_user_id):
-        new_like = Like(blog_id = blog_id,
-                        user_id = logged_in_user_id)
+        new_like = Like(blog_id = int(blog_id),
+                        user_id = int(logged_in_user_id))
         new_like.put()
     
     @classmethod
     def get_all_blog_likes(cls, blog_id):
         #this function returns all the blogs of a certain user
-        all_blog_likes = cls.all().filter("blog_id", blog_id)
-        return all_blog_like
+        all_blog_likes = cls.all().filter("blog_id", int(blog_id))
+        return all_blog_likes
 
     @classmethod
     def check_user_like(cls, blog_id, user_id):
         #function that checks if a certain blog is already liked by a user
-        liked_blog = Like.get_all_blog_likes(blog_id)
+        liked_blog = Like.get_all_blog_likes(int(blog_id))
 
-        is_blog_liked = liked_blog.all().filter("user_id", user_id)
+        is_blog_liked = liked_blog.filter("user_id", int(user_id)).get()
         if is_blog_liked:
             return True
         else:
             return False
-        
+
+    @classmethod
+    def get_row_by_user_and_blog_id(cls, blog_id, user_id):
+        all_blog_likes = cls.get_all_blog_likes(int(blog_id))
+        like_row = all_blog_likes.filter("user_id", int(user_id))
+        return like_row
         
 class Comment(db.Model):
     blog_id = db.IntegerProperty(required = True)
@@ -196,12 +201,16 @@ class InputValidators:
 
 class PostBlog(MyBlogWebsiteHandler):
     def get(self):
-        self.render("postblog.html")
+        user_id = self.read_secure_cookie("user_cookie_id")
+        
+        self.render("postblog.html" ,
+                    username = User.get_row_by_id(user_id).username)
     def post(self):
         blog_title = self.request.get("blogtitle")
         blog_body = self.request.get("blogbody")
         user_id = self.read_secure_cookie("user_cookie_id")
         has_error = False
+        
         #TODO input validators
 
         if user_id and not has_error:
@@ -220,8 +229,16 @@ class AddLike(MyBlogWebsiteHandler):
         blog_owner_id = self.request.get("ownerid")
         user_id = self.read_secure_cookie("user_cookie_id")
         if not user_id == blog_owner_id:
-            Like.like_a_blog(int(blog_id), int(user_id))
-            self.redirect("/home")
+            #if the logged in user is not the owner of the blog, let him like or unlike
+            if not Like.check_user_like(blog_id, user_id):
+                #if the logged in user hasnt already liked the blog
+                Like.like_a_blog(blog_id, user_id)
+                self.redirect("/home")
+            else:
+                #unlike, delete specific row in the Like table
+                to_delete_row = Like.get_row_by_user_and_blog_id(blog_id, user_id)
+                db.delete(to_delete_row)
+                self.redirect("/home")
         else:
             self.render("homepage.html", error_message = "You can't like your own posts")
 
@@ -260,7 +277,8 @@ class EditBlog(MyBlogWebsiteHandler):
         if int(user_id) == int(blog_owner_id):
             self.render("editblog.html", blog_id = blog_id,
                         blog_title = blog_title,
-                        blog_body = blog_body)
+                        blog_body = blog_body,
+                        username = User.get_row_by_id(user_id).username)
         else:
             self.render("homepage.html", error_message = "You can't edit someone else's posts")
     def post(self):
@@ -282,7 +300,11 @@ class HomePage(MyBlogWebsiteHandler):
     def get(self):
         user_id = self.read_secure_cookie("user_cookie_id")
         if user_id:
-            self.render("homepage.html", blogs = Blog.get_recent_blogs(), users = User)
+            self.render("homepage.html", blogs = Blog.get_recent_blogs(),
+                        users = User,
+                        likes = Like, 
+                        logged_in_user = int(user_id), 
+                        username = User.get_row_by_id(user_id).username)
         else:
             self.redirect("/signup")
 

@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 
+{% block links %}
+	<a href="/logout">Log Out</a>|
+	<a href="/postblog">Post Blog</a>
+{% endblock %}
 {% block content %}
 	<header class="row">
 		<div class="col-md-12 text-center">
@@ -19,12 +23,14 @@
 						<p>{{blog.date_modified}}</p>
 					</div>
 				</div>
+				{% if logged_in_user == blog.user_id %}
 				<div class="col-md-2">
 					<form method="get" action="/editblog">
 						<input type="hidden" name="blogId" value="{{blog.key().id()}}">
-						<input type="submit" name="editBlogPost" value="Edit">
+						<button type="submit" name="editBlogPost" value="Edit">Edit Post</button>
 					</form>
 				</div>
+				{% endif %}
 			</div>
 			<div class="row">
 				<div class="col-md-12">
@@ -33,6 +39,7 @@
 			</div>
 			<section class="row">
 				<div class="col-md-12">
+					{% if not likes.check_user_like(blog.key().id(), logged_in_user) %}
 					<div class="col-md-2 col-md-offset-8">
 						<form method="post" action="/home/like">
 							<input type="hidden" name="blogid" value="{{blog.key().id()}}">
@@ -40,6 +47,15 @@
 							<button class="col-md-12" type="submit" value="Like" name="likeblogpost">Like</button>
 						</form>
 					</div>
+					{% else %}
+					<div class="col-md-2 col-md-offset-8">
+						<form method="post" action="/home/like">
+							<input type="hidden" name="blogid" value="{{blog.key().id()}}">
+							<input type="hidden" name="ownerid" value="{{blog.user_id}}">
+							<button class="col-md-12" type="submit" value="Like" name="likeblogpost">Unlike</button>
+						</form>
+					</div>
+					{% endif %}
 					<div class="col-md-2">
 						<button class="col-md-12" type="submit" name="commentonblogpost" data-toggle="modal" data-target="#comment{{blog.key().id()}}">Comment</button>
 					</div>
