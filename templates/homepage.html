@@ -24,11 +24,14 @@
 					</div>
 				</div>
 				{% if logged_in_user == blog.user_id %}
-				<div class="col-md-2">
+				<div class="col-md-1">
 					<form method="get" action="/editblog">
 						<input type="hidden" name="blogId" value="{{blog.key().id()}}">
 						<button type="submit" name="editBlogPost" value="Edit">Edit Post</button>
 					</form>
+				</div>
+				<div class="col-md-1">
+					<button type="submit" name="deleteablogpost" data-toggle="modal" data-target="#delete{{blog.key().id()}}">Delete Post</button>
 				</div>
 				{% endif %}
 			</div>
@@ -80,6 +83,29 @@
 				<input type="hidden" name="ownerid" value="{{blog.user_id}}">
 				<textarea class="col-md-12" name="usercomment"></textarea>
 				<input class="col-md-12" type="submit" value="Comment" name="likeblogpost">
+			</form>
+	      </div>
+	      <div class="modal-footer">
+	        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+	      </div>
+	    </div>
+
+	  </div>
+	</div>
+	<div id="delete{{blog.key().id()}}" class="modal fade" role="dialog">
+	  <div class="modal-dialog">
+
+	    <!-- Modal content-->
+	    <div class="modal-content">
+	      <div class="modal-header">
+	        <button type="button" class="close" data-dismiss="modal">&times;</button>
+	        <h4 class="modal-title">Are you sure you want to delete this blog: {{blog.blog_title}}?</h4>
+	      </div>
+	      <div class="modal-body">
+	        <form class="col-md-12" method="post" action="/deleteblog">
+				<input type="hidden" name="blogId" value="{{blog.key().id()}}">
+				<button class="col-md-6" type="submit" name="yesondeleteblogpost" value="Edit">Yes</button>
+				<button class="col-md-6 btn btn-default" data-dismiss="modal" type="button" name="editBlogPost" value="Edit">No</button>
 			</form>
 	      </div>
 	      <div class="modal-footer">

@@ -7,6 +7,7 @@ from google.appengine.ext import db
 import hmac
 import hashlib
 import random
+import time
 
 
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
@@ -90,7 +91,14 @@ class Blog(db.Model):
     def get_blog_by_blog_id(cls, blog_id):
         blog = cls.get_by_id(int(blog_id))
         return blog
-    
+
+    @classmethod
+    def delete_a_blog(cls, blog_id):
+        #this function deletes a blog entry from the database
+
+        #assign the blog to be deleted to a variable called blog
+        blog = cls.get_blog_by_blog_id(blog_id)
+        db.delete(blog)
 class Like(db.Model):
     blog_id = db.IntegerProperty(required = True)
     user_id = db.IntegerProperty(required = True)
@@ -165,6 +173,12 @@ class MyBlogWebsiteHandler(webapp2.RequestHandler):
     def read_secure_cookie(self, cookie_name):
         cookie_val = self.request.cookies.get(cookie_name)
         return cookie_val and self.check_valid_cookie(cookie_val)
+
+    def exec_delay(self):
+        #this is to allow database to store the new data
+        #first before redirecting to the homepage
+        
+        time.sleep(.5)
         
     #def initialize(self, *a, **kw):
         #webapp2.RequestHandler.initialize(self, *a, **kw)
@@ -217,6 +231,9 @@ class PostBlog(MyBlogWebsiteHandler):
             new_blog = Blog.post_blog(int(user_id), blog_title, blog_body)
             #insert the new entry into the database
             new_blog.put()
+
+            self.exec_delay()
+            
             self.redirect("/home")
         else:
             self.render("postblog.html", blogtitle = blog_title)
@@ -233,11 +250,17 @@ class AddLike(MyBlogWebsiteHandler):
             if not Like.check_user_like(blog_id, user_id):
                 #if the logged in user hasnt already liked the blog
                 Like.like_a_blog(blog_id, user_id)
+
+                self.exec_delay()
+                
                 self.redirect("/home")
             else:
                 #unlike, delete specific row in the Like table
                 to_delete_row = Like.get_row_by_user_and_blog_id(blog_id, user_id)
                 db.delete(to_delete_row)
+
+                self.exec_delay()
+                
                 self.redirect("/home")
         else:
             self.render("homepage.html", error_message = "You can't like your own posts")
@@ -254,6 +277,9 @@ class AddComment(MyBlogWebsiteHandler):
 
         if not user_id == blog_owner_id:
             Comment.comment_on_blog(int(blog_id), int(user_id), user_comment)
+
+            self.exec_delay()
+            
             self.redirect("/home")
         else:
             self.render("homepage.html", error_message = "You can't comment on your own posts")
@@ -294,7 +320,21 @@ class EditBlog(MyBlogWebsiteHandler):
                                    blog_id,
                                    blog_title,
                                    blog_body)
+
+            self.exec_delay()
+            
             self.redirect("/home")
+class DeleteBlog(MyBlogWebsiteHandler):
+    def get(self):
+        self.redirect("/home")
+    def post(self):
+        #get data from the form
+        blog_id = self.request.get("blogId")
+        Blog.delete_a_blog(blog_id)
+
+        self.exec_delay()
+        
+        self.redirect("/home")
         
 class HomePage(MyBlogWebsiteHandler):
     def get(self):
@@ -423,6 +463,7 @@ app = webapp2.WSGIApplication([
     ('/home/like', AddLike),
     ('/home/comment', AddComment),
     ('/editblog', EditBlog),
+    ('/deleteblog', DeleteBlog),
     ('/signup', SignUp),
     ('/logout', LogOut),
     ('/login', LogIn),
