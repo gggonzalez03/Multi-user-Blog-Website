@@ -8,40 +8,46 @@
 	</header>
 	<hr class="row">
 		<!--This will be a jinja logic-->
-	{% for blog in blogs%}
+	{% for blog in blogs %}
 	<article class="row">
-		<div class="col-md-12">
-			<div class="text-center">
-				<h3 class="blogtitle">{{blog.blog_title}}</h3>
-				<p class="blogowner">by {{users.get_row_by_id(blog.user_id).username}}</p>
-				<p>{{blog.date_posted}}</p>
+		<div class="col-md-6 col-md-offset-3">
+			<div class="row">
+				<div class="col-md-8 col-md-offset-2">
+					<div class="text-center">
+						<h3 class="blogtitle">{{blog.blog_title}}</h3>
+						<p class="blogowner">by {{users.get_row_by_id(blog.user_id).username}}</p>
+						<p>{{blog.date_modified}}</p>
+					</div>
+				</div>
+				<div class="col-md-2">
+					<form method="get" action="/editblog">
+						<input type="hidden" name="blogId" value="{{blog.key().id()}}">
+						<input type="submit" name="editBlogPost" value="Edit">
+					</form>
+				</div>
 			</div>
-			<div class="col-md-3"></div>
-			<div class="col-md-6">
-				<p>{{blog.blog_body}}</p>
+			<div class="row">
+				<div class="col-md-12">
+					<p>{{blog.blog_body}}</p>
+				</div>
 			</div>
+			<section class="row">
+				<div class="col-md-12">
+					<div class="col-md-2 col-md-offset-8">
+						<form method="post" action="/home/like">
+							<input type="hidden" name="blogid" value="{{blog.key().id()}}">
+							<input type="hidden" name="ownerid" value="{{blog.user_id}}">
+							<button class="col-md-12" type="submit" value="Like" name="likeblogpost">Like</button>
+						</form>
+					</div>
+					<div class="col-md-2">
+						<button class="col-md-12" type="submit" name="commentonblogpost" data-toggle="modal" data-target="#comment{{blog.key().id()}}">Comment</button>
+					</div>
+				</div>
+			</section>
+			<hr class="row">
 		</div>
 	</article>
-	<section class="row">
-		<div class="col-md-3"></div>
-		<div class="col-md-6">
-			<div class="col-md-6"></div>
-			<div class="col-md-3">
-				<form method="post" action="/home/like">
-					<input type="hidden" name="blogid" value="{{blog.key().id()}}">
-					<input type="hidden" name="ownerid" value="{{blog.user_id}}">
-					<button class="col-md-12" type="submit" value="Like" name="likeblogpost">Like</button>
-				</form>
-			</div>
-			<div class="col-md-3">
-				<button class="col-md-12" type="submit" name="commentonblogpost" data-toggle="modal" data-target="#comment{{blog.key().id()}}">Comment</button>
-			</div>
-		</div>
-	</section>
-		
-
-	<hr class="row">
-
 	<!-- Modal -->
 	<div id="comment{{blog.key().id()}}" class="modal fade" role="dialog">
 	  <div class="modal-dialog">

@@ -1,8 +1,7 @@
 {% extends "base.html" %}
 {% block form %}
     <div class="row">
-        <div class="col-md-3"></div>
-        <div class="col-md-6">
+        <div class="col-md-6 col-md-offset-2">
             <form method="post">
                 <label class="col-md-6 text-right">Username:</label>
                 <input class="col-md-6" type="text" name="username">
@@ -20,7 +19,7 @@
                 <input class="col-md-6" type="text" name="email">
                 <div class="col-md-offset-6 error-message"><p>{{error_email}}</p></div>
                 
-                <input class="col-md-12" type="submit" name="submit" value="Sign Up">
+                <input class="col-md-6 col-md-offset-6" type="submit" name="submit" value="Sign Up">
             </form>
         </div>
     </div>

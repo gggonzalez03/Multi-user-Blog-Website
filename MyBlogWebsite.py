@@ -42,10 +42,9 @@ class User(db.Model):
     #PLEASE EVALUATE :)
     #class methods that are accessible by the class instead of the instance of the class
     @classmethod
-    def get_row_by_id (cls, user_id):
+    def get_row_by_id(cls, user_id):
         retrieved_user = cls.get_by_id(int(user_id))
         return retrieved_user
-    
     @classmethod
     def get_row_by_username(cls, username):
         retrieved_user = cls.all().filter('username =', username).get()
@@ -79,7 +78,7 @@ class Blog(db.Model):
     @classmethod
     def get_recent_blogs(cls):
         #this function returns the 10 most recent blogs in the database
-        recent_blogs = cls.all().order('-date_modified').run(limit=10)
+        recent_blogs = cls.all().order('-date_posted').run(limit=10)
         return recent_blogs
 
     @classmethod
@@ -87,6 +86,10 @@ class Blog(db.Model):
         #this function returns all the blogs of a certain user
         all_user_blogs = cls.all().filter("user_id", user_id)
         return all_user_blogs
+    @classmethod
+    def get_blog_by_blog_id(cls, blog_id):
+        blog = cls.get_by_id(int(blog_id))
+        return blog
     
 class Like(db.Model):
     blog_id = db.IntegerProperty(required = True)
@@ -205,11 +208,9 @@ class PostBlog(MyBlogWebsiteHandler):
             new_blog = Blog.post_blog(int(user_id), blog_title, blog_body)
             #insert the new entry into the database
             new_blog.put()
-                
-            #self.set_secure_cookie("user_cookie_id", str(new_user.key().id()))
-            self.render("postblog.html", blogtitle = new_blog)
+            self.redirect("/home")
         else:
-            self.redirect("/signup")
+            self.render("postblog.html", blogtitle = blog_title)
 
 class AddLike(MyBlogWebsiteHandler):
     def get(self):
@@ -240,6 +241,43 @@ class AddComment(MyBlogWebsiteHandler):
         else:
             self.render("homepage.html", error_message = "You can't comment on your own posts")
 
+class EditBlog(MyBlogWebsiteHandler):
+    def update_blog_entry(self, user_id, blog_id, blog_title, blog_body):
+        to_edit_blog = Blog.get_blog_by_blog_id(blog_id)
+        to_edit_blog.blog_title = blog_title
+        to_edit_blog.blog_body = blog_body
+        to_edit_blog.put()
+        return to_edit_blog.blog_title
+    
+    def get(self):
+        blog_id = self.request.get("blogId")
+        blog = Blog.get_blog_by_blog_id(blog_id)
+        blog_owner_id = blog.user_id
+        blog_title = blog.blog_title
+        blog_body = blog.blog_body
+        user_id = self.read_secure_cookie("user_cookie_id")
+
+        if int(user_id) == int(blog_owner_id):
+            self.render("editblog.html", blog_id = blog_id,
+                        blog_title = blog_title,
+                        blog_body = blog_body)
+        else:
+            self.render("homepage.html", error_message = "You can't edit someone else's posts")
+    def post(self):
+        blog_id = self.request.get("blogId")
+        blog = Blog.get_blog_by_blog_id(blog_id)
+        blog_owner_id = blog.user_id
+        blog_title = self.request.get("blogTitle")
+        blog_body = self.request.get("blogBody")
+        user_id = self.read_secure_cookie("user_cookie_id")
+
+        if int(user_id) == int(blog_owner_id):
+            self.update_blog_entry(blog_owner_id,
+                                   blog_id,
+                                   blog_title,
+                                   blog_body)
+            self.redirect("/home")
+        
 class HomePage(MyBlogWebsiteHandler):
     def get(self):
         user_id = self.read_secure_cookie("user_cookie_id")
@@ -361,6 +399,7 @@ app = webapp2.WSGIApplication([
     ('/home', HomePage),
     ('/home/like', AddLike),
     ('/home/comment', AddComment),
+    ('/editblog', EditBlog),
     ('/signup', SignUp),
     ('/logout', LogOut),
     ('/login', LogIn),
