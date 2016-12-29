@@ -156,7 +156,7 @@ class Comment(db.Model):
 
     @classmethod
     def get_recent_comments_on_blog(cls, blog_id):
-        comment_row = cls.all().filter("blog_id", blog_id)
+        comment_row = cls.all().filter("blog_id", int(blog_id))
         return comment_row
 
     @classmethod
@@ -165,8 +165,8 @@ class Comment(db.Model):
         db.delete(comments_to_delete)
 
     @classmethod
-    def delete_comment_by_comment_id(comment_id):
-        comment_to_delete = cls.get_by_id(comment_id)
+    def delete_comment_by_comment_id(cls, comment_id):
+        comment_to_delete = cls.get_by_id(int(comment_id))
         db.delete(comment_to_delete)
 
 
@@ -308,19 +308,29 @@ class AddComment(MyBlogWebsiteHandler):
         self.redirect("/home")
 
     def post(self):
-        blog_id = self.request.get("blogid")
-        blog_owner_id = self.request.get("ownerid")
-        user_comment = self.request.get("usercomment")
+        add_comment = self.request.get("addcomment")
+        to_delete_or_not = self.request.get("toDeleteCommentOrNot")
         user_id = self.read_secure_cookie("user_cookie_id")
+        
 
         if user_id:
-            Comment.comment_on_blog(int(blog_id),
-                                    int(user_id),
-                                    user_comment)
-
-            self.exec_delay()
-
-            self.redirect("/home")
+            if add_comment:
+                blog_id = self.request.get("blogid")
+                blog_owner_id = self.request.get("ownerid")
+                user_comment = self.request.get("usercomment")
+                Comment.comment_on_blog(int(blog_id),
+                                        int(user_id),
+                                        user_comment)
+                self.exec_delay()
+                self.redirect("/home")
+            elif to_delete_or_not:
+                if to_delete_or_not == "Yes":
+                    comment_id = self.request.get("commentId")
+                    Comment.delete_comment_by_comment_id(comment_id)
+                    self.exec_delay()
+                    self.redirect("/home")
+                elif to_delete_or_not == "No":
+                    self.redirect("/home")
         else:
             self.redirect("/login")
 

@@ -77,7 +77,33 @@
 							<p>{{comment.comment}}</p>
 						</div>
 						<div class="col-md-1">
-							<button>Delete</button>
+							{% if logged_in_user == comment.user_id %}
+							<button type="submit" name="deletecomment" data-toggle="modal" data-target="#deletecomment{{comment.key().id()}}">Delete</button>
+
+							<div id="deletecomment{{comment.key().id()}}" class="modal fade" role="dialog">
+								<div class="modal-dialog">
+
+								<!-- Modal content-->
+									<div class="modal-content">
+									    <div class="modal-header">
+									    	<button type="button" class="close" data-dismiss="modal">&times;</button>
+									        <h4 class="modal-title">{{blog.blog_title}}</h4>
+									    </div>
+									    <div class="modal-body">
+									        <form method="post" action="/home/comment">
+									        	<input type="hidden" name="commentId" value="{{comment.key().id()}}">
+												<input class="col-md-12" type="submit" value="Yes" name="toDeleteCommentOrNot">
+												<input class="col-md-12" type="submit" name="toDeleteCommentOrNot" value="No">
+											</form>
+									    </div>
+									    <div class="modal-footer">
+									     	<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+									    </div>
+									</div>
+
+								</div>
+							</div>
+							{% endif %}
 						</div>
 						<hr class="col-md-12">
 					{% endfor %}
@@ -101,7 +127,7 @@
 				<input type="hidden" name="blogid" value="{{blog.key().id()}}">
 				<input type="hidden" name="ownerid" value="{{blog.user_id}}">
 				<textarea class="col-md-12" name="usercomment"></textarea>
-				<input class="col-md-12" type="submit" value="Comment" name="likeblogpost">
+				<input class="col-md-12" type="submit" value="Comment" name="addcomment">
 			</form>
 	      </div>
 	      <div class="modal-footer">
