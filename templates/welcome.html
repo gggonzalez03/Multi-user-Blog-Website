@@ -1,9 +1,14 @@
 {% extends "base.html" %}
+
+{% block links %}
+    <a href="/logout">Log Out</a>|
+    <a href="/home">Home</a>
+{% endblock %}
+
 {% block content %}
 	<div class="row">
 		<div class="col=md-6 text-center">
 			<h1>Welcome, {{message}}!</h1>
-			<a href="/logout">Log Out</a>
 		</div>
 	</div>
 {% endblock %}

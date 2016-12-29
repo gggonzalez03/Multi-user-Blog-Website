@@ -411,7 +411,8 @@ class WelcomePage(SignUp):
             if is_cookie_valid:
                 #if the cookie is valid, 
                 user_id = user_cookie_id.split("|")[0]
-                self.render("welcome.html", message = User.get_row_by_id(user_id).username)
+                self.render("welcome.html", message = User.get_row_by_id(user_id).username ,
+                            username = User.get_row_by_id(user_id).username)
             else:
                 self.redirect("/signup")
         else:
