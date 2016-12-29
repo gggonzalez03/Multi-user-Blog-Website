@@ -35,11 +35,13 @@
 				</div>
 				{% endif %}
 			</div>
+			<!--Here's the blog body-->
 			<div class="row">
 				<div class="col-md-12">
 					<p>{{blog.blog_body}}</p>
 				</div>
 			</div>
+			<!--Like and comment section-->
 			<section class="row">
 				<div class="col-md-12">
 					{% if not likes.check_user_like(blog.key().id(), logged_in_user) %}
@@ -65,7 +67,21 @@
 				</div>
 			</section>
 			<hr class="row">
+			<!--blog comments section-->
+			<section class="row">
+				<div class="col-md-6 col-md-offset-3">
+					<!--Jinja logic here-->
+					{% for comment in "ab" %}
+						<div class="col-md-12">
+							<h4>Ging Gonzalez</h4>
+							<p>This is my comment</p>
+						</div>
+						<hr class="col-md-12">
+					{% endfor %}
+				</div>
+			</section>
 		</div>
+		<hr class="col-md-12">
 	</article>
 	<!-- Modal -->
 	<div id="comment{{blog.key().id()}}" class="modal fade" role="dialog">
