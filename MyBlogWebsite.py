@@ -169,6 +169,12 @@ class Comment(db.Model):
         comment_to_delete = cls.get_by_id(int(comment_id))
         db.delete(comment_to_delete)
 
+    @classmethod
+    def update_comment(cls, comment_id, comment_update):
+        comment_to_edit = cls.get_by_id(int(comment_id))
+        comment_to_edit.comment = comment_update
+        comment_to_edit.put()
+
 
 # (c)Udacity
 class MyBlogWebsiteHandler(webapp2.RequestHandler):
@@ -277,10 +283,11 @@ class AddLike(MyBlogWebsiteHandler):
         self.redirect("/home")
 
     def post(self):
-        blog_id = self.request.get("blogid")
+        like_blog_post = self.request.get("likeblogpost")# Returns Like or Unlike. From the form
         blog_owner_id = self.request.get("ownerid")
         user_id = self.read_secure_cookie("user_cookie_id")
         if not user_id == blog_owner_id:
+            blog_id = self.request.get("blogid")
             # if the user is not the owner, let him like
             if not Like.check_user_like(blog_id, user_id):
                 # if the logged in user hasnt already liked the blog
@@ -311,7 +318,6 @@ class AddComment(MyBlogWebsiteHandler):
         add_comment = self.request.get("addcomment")
         to_delete_or_not = self.request.get("toDeleteCommentOrNot")
         user_id = self.read_secure_cookie("user_cookie_id")
-        
 
         if user_id:
             if add_comment:
@@ -327,6 +333,14 @@ class AddComment(MyBlogWebsiteHandler):
                 if to_delete_or_not == "Yes":
                     comment_id = self.request.get("commentId")
                     Comment.delete_comment_by_comment_id(comment_id)
+                    self.exec_delay()
+                    self.redirect("/home")
+                elif to_delete_or_not == "Edit":
+                    comment_id = self.request.get("commentId")
+                    comment_update = self.request.get("commentupdate")
+
+                    Comment.update_comment(comment_id, comment_update)
+
                     self.exec_delay()
                     self.redirect("/home")
                 elif to_delete_or_not == "No":
