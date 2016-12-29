@@ -132,6 +132,15 @@ class Like(db.Model):
         like_row = all_blog_likes.filter("user_id", int(user_id))
         return like_row
 
+    @classmethod
+    def delete_a_like(cls, like_row):
+        db.delete(like_row)
+
+    @classmethod
+    def delete_likes_by_blog_id(cls, blog_id):
+        likes_to_delete = cls.all().filter("blog_id", int(blog_id))
+        db.delete(likes_to_delete)
+
 
 class Comment(db.Model):
     blog_id = db.IntegerProperty(required=True)
@@ -144,6 +153,21 @@ class Comment(db.Model):
                               user_id=logged_in_user_id,
                               comment=user_comment)
         new_comment.put()
+
+    @classmethod
+    def get_recent_comments_on_blog(cls, blog_id):
+        comment_row = cls.all().filter("blog_id", blog_id)
+        return comment_row
+
+    @classmethod
+    def delete_comments_by_blog_id(cls, blog_id):
+        comments_to_delete = cls.all().filter("blog_id", int(blog_id))
+        db.delete(comments_to_delete)
+
+    @classmethod
+    def delete_comment_by_comment_id(comment_id):
+        comment_to_delete = cls.get_by_id(comment_id)
+        db.delete(comment_to_delete)
 
 
 # (c)Udacity
@@ -269,7 +293,7 @@ class AddLike(MyBlogWebsiteHandler):
                 # unlike, delete specific row in the Like table
                 to_delete_row = Like.get_row_by_user_and_blog_id(blog_id,
                                                                  user_id)
-                db.delete(to_delete_row)
+                Like.delete_a_like(to_delete_row)
 
                 self.exec_delay()
 
@@ -289,7 +313,7 @@ class AddComment(MyBlogWebsiteHandler):
         user_comment = self.request.get("usercomment")
         user_id = self.read_secure_cookie("user_cookie_id")
 
-        if not user_id == blog_owner_id:
+        if user_id:
             Comment.comment_on_blog(int(blog_id),
                                     int(user_id),
                                     user_comment)
@@ -298,8 +322,7 @@ class AddComment(MyBlogWebsiteHandler):
 
             self.redirect("/home")
         else:
-            self.render("homepage.html",
-                        error_message="You can't comment on your own posts")
+            self.redirect("/login")
 
 
 class EditBlog(MyBlogWebsiteHandler):
@@ -352,7 +375,13 @@ class DeleteBlog(MyBlogWebsiteHandler):
 
     def post(self):
         # get data from the form
+        # TODO:
+            # Delete rows in Likes and Comments table
+            # that are associated with the deleted blog
+
         blog_id = self.request.get("blogId")
+        Comment.delete_comments_by_blog_id(blog_id)
+        Like.delete_likes_by_blog_id(blog_id)
         Blog.delete_a_blog(blog_id)
 
         self.exec_delay()
