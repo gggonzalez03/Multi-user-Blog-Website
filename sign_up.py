@@ -15,8 +15,7 @@ class SignUp(MyBlogWebsiteHandler, InputValidators):
         verify = self.request.get("verify")
         email = self.request.get("email")
 
-        error_messages = dict(username=username,
-                              email=email)
+        error_messages = dict()
 
         if not self.valid_username(username):
             error_messages["error_username"] = "That's not a valid username"
