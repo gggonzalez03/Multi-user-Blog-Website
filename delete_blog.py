@@ -17,12 +17,18 @@ class DeleteBlog(MyBlogWebsiteHandler):
         # TODO:
             # Delete rows in Likes and Comments table
             # that are associated with the deleted blog
-
+        user_id = self.read_secure_cookie("user_cookie_id")
         blog_id = self.request.get("blogId")
-        Comment.delete_comments_by_blog_id(blog_id)
-        Like.delete_likes_by_blog_id(blog_id)
-        Blog.delete_a_blog(blog_id)
 
-        self.exec_delay()
+        # Check if the logged in user is the
+        # author of the blog being deleted
+        if int(user_id) ==  Blog.get_blog_by_blog_id(blog_id).user_id:
+            Comment.delete_comments_by_blog_id(blog_id)
+            Like.delete_likes_by_blog_id(blog_id)
+            Blog.delete_a_blog(blog_id)
 
-        self.redirect("/home")
+            self.exec_delay()
+
+            self.redirect("/home")
+        else:
+            self.redirect("/login")

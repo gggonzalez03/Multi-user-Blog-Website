@@ -5,6 +5,8 @@ class Comment(db.Model):
     blog_id = db.IntegerProperty(required=True)
     user_id = db.IntegerProperty(required=True)
     comment = db.StringProperty(required=True)
+    date_added = db.DateTimeProperty(auto_now_add=True)
+    date_modified = db.DateTimeProperty(auto_now=True)
 
     @classmethod
     def comment_on_blog(cls, blog_id, logged_in_user_id, user_comment):
@@ -15,8 +17,15 @@ class Comment(db.Model):
 
     @classmethod
     def get_recent_comments_on_blog(cls, blog_id):
-        comment_row = cls.all().filter("blog_id", int(blog_id))
+        comment_row = cls.all().filter("blog_id",
+                                       int(blog_id)).order('date_added').run(limit=5)
         return comment_row
+
+    @classmethod
+    def get_user_id_by_comment_id(cls,comment_id):
+        user_id = cls.get_by_id(int(comment_id)).user_id
+        return user_id
+        
 
     @classmethod
     def delete_comments_by_blog_id(cls, blog_id):

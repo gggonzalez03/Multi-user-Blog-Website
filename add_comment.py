@@ -20,26 +20,36 @@ class AddComment(MyBlogWebsiteHandler):
                 blog_id = self.request.get("blogid")
                 blog_owner_id = self.request.get("ownerid")
                 user_comment = self.request.get("usercomment")
-                Comment.comment_on_blog(int(blog_id),
-                                        int(user_id),
-                                        user_comment)
-                self.exec_delay()
-                self.redirect("/home")
+                # Makes sure the user is logged in
+                # before adding the comment to the database
+                if user_id:
+                    Comment.comment_on_blog(int(blog_id),
+                                            int(user_id),
+                                            user_comment)
+                    self.exec_delay()
+                    self.redirect("/home")
+                else:
+                    self.redirect("/login")
             elif to_delete_or_not:
-                if to_delete_or_not == "Yes":
-                    comment_id = self.request.get("commentId")
-                    Comment.delete_comment_by_comment_id(comment_id)
-                    self.exec_delay()
-                    self.redirect("/home")
-                elif to_delete_or_not == "Edit":
-                    comment_id = self.request.get("commentId")
-                    comment_update = self.request.get("commentupdate")
+                comment_id = self.request.get("commentId")
+                # check if logged in user is the
+                # owner of the comment being deleted
+                # or edited
+                if int(user_id) == Comment.get_user_id_by_comment_id(comment_id):
+                    if to_delete_or_not == "Yes":
+                        Comment.delete_comment_by_comment_id(comment_id)
+                        self.exec_delay()
+                        self.redirect("/home")
+                    elif to_delete_or_not == "Edit":
+                        comment_update = self.request.get("commentupdate")
 
-                    Comment.update_comment(comment_id, comment_update)
+                        Comment.update_comment(comment_id, comment_update)
 
-                    self.exec_delay()
-                    self.redirect("/home")
-                elif to_delete_or_not == "No":
+                        self.exec_delay()
+                        self.redirect("/home")
+                    else:
+                        self.redirect("/home")
+                else:
                     self.redirect("/home")
         else:
             self.redirect("/login")

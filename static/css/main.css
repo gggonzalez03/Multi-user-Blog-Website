@@ -2,30 +2,52 @@ body{
 	font-family: 'Lato', sans-serif;
 	font-weight: 300;
 }
+
 form > input, textarea{
 	display: block;
 	padding: 5px;
 	margin-bottom: 4px;
 }
+
 header{
 	margin-bottom: 50px;
 }
+
+.userfunctionicons{
+	background-color: Transparent;
+    background-repeat:no-repeat;
+    border: transparent;
+    border-radius: 5px;
+    cursor:pointer;
+    overflow: hidden;
+    outline:none;
+}
+
+.userfunctionicons:hover{
+	background-color: #bb99ff;
+}
+
 .text-muted{
 	color: #BCBBBB;
 }
+
 .text-thin{
 	font-weight: 100;
 }
+
 .title-super{
 	font-size: 60px;
 }
+
 .error-message{
 	color: red;
 	padding: 10px
 }
+
 .blogtitle{
 	display: inline;
 }
+
 .blogowner{
 	display: inline;
 }
