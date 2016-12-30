@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-
+{% block pagetitle %}Edit Blog{% endblock %}
 {% block links %}
     <a href="/logout">Log Out</a>|
     <a href="/home">Home</a>
@@ -15,7 +15,7 @@
                 <input class="col-md-10" type="text" name="blogTitle" value="{{blog_title}}">
                 <label class="col-md-2 text-right">Blog Body:</label>
                 <textarea class="col-md-10" name="blogBody" rows="10">{{blog_body}}</textarea>
-                <input class="col-md-10 col-md-offset-2" type="submit" name="submit" value="Post Blog">
+                <input class="col-md-10 col-md-offset-2" type="submit" name="postorupdateblog" value="Update Post">
             </form>
             <a href="/home"><button class="col-md-10 col-md-offset-2">Cancel</button></a>
         </div>
