@@ -11,4 +11,4 @@ A multi-user blog website
 5.) Open a browser and go to http://localhost:8080/login
 
 The website is also available online at:
-	https://udacity-project-multiuserblog.appspot.com/login
+	https://udacitymultiuserblog.appspot.com/login
